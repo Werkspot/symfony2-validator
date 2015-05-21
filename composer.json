@@ -1,0 +1,25 @@
+{
+    "name": "werkspot/symfony2-validator",
+    "type": "library",
+    "description": "Werkspot Symfony2 validation constraints",
+    "keywords": ["Werkspot", "validator", "constraint"],
+    "homepage": "http://www.werkspot.nl",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Technology",
+            "email": "technology@werkspot.nl"
+        }
+    ],
+    "autoload": {
+        "psr-4": { "Werkspot\\Component\\Validator\\": "" }
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "symfony/validator": "~2.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.1"
+    },
+    "minimum-stability": "stable"
+}
