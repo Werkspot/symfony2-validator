@@ -18,7 +18,6 @@ class NumericIdValidator extends ConstraintValidator
         $shouldCheckType = $this->shouldCheckType($constraint);
         $scalarValue = $this->getScalarValue($value);
 
-
         if (!$this->isValueNumericAndBiggerThanOne($scalarValue, $shouldCheckType)) {
             $this->buildViolation($constraint->message)
                 ->setParameter('{{ value }}', $this->formatValue($scalarValue))
@@ -72,7 +71,7 @@ class NumericIdValidator extends ConstraintValidator
      */
     private function isValueNumeric($value, $checkType = false)
     {
-        return intval($value) == $value && (!$checkType || intval($value) === $value);
+        return preg_match('!^\d+$!', $value) === 1 && (!$checkType || intval($value) === $value);
     }
 
     /**
