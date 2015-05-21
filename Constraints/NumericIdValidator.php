@@ -71,7 +71,8 @@ class NumericIdValidator extends ConstraintValidator
      */
     private function isValueNumeric($value, $checkType = false)
     {
-        return preg_match('!^\d+$!', $value) === 1 && (!$checkType || intval($value) === $value);
+        $valueCastedToInt = (int)$value;
+        return (string)$valueCastedToInt == $value && (!$checkType || $valueCastedToInt === $value);
     }
 
     /**
