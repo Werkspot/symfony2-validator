@@ -71,6 +71,7 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
             ['5  ', new NumericId()],
             [' 6 ', new NumericId()],
             [new StubValueWithToStringMethod(' 7b '), new NumericId(['checkType' => false])],
+            [' 8', new NumericId()],
         ];
     }
 
