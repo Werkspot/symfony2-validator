@@ -1,8 +1,15 @@
 <?php
 namespace Werkspot\Component\Validator\Tests\Constraints;
 
+use Doctrine\Common\Annotations\AnnotationReader;
+use Doctrine\Common\Annotations\CachedReader;
+use Doctrine\Common\Cache\ArrayCache;
+use Symfony\Component\Validator\ConstraintViolationInterface;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Tests\Constraints\AbstractConstraintValidatorTest;
 use Symfony\Component\Validator\Validation;
+use Symfony\Component\Validator\ValidatorBuilder;
+use Symfony\Component\Validator\ValidatorInterface;
 use Werkspot\Component\Validator\Constraints\NumericId;
 use Werkspot\Component\Validator\Constraints\NumericIdValidator;
 
@@ -92,6 +99,102 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
             ['4', new NumericId()],
             [new StubValueWithToStringMethod('5'), new NumericId()],
         ];
+    }
+
+    /**
+     * @dataProvider getValidNumericIdEntityData
+     *
+     * @param mixed $numericIdWithoutTypeCheck
+     * @param mixed $numericIdWithTypeCheck
+     */
+    public function testNumericIdEntityAnnotation_thatIsValid($numericIdWithoutTypeCheck, $numericIdWithTypeCheck)
+    {
+        $entity = new StubEntityWithNumericIds($numericIdWithoutTypeCheck, $numericIdWithTypeCheck);
+        $violationList = $this->getValidatorWithAnnotationReader()->validate($entity);
+
+        $this->assertEmpty($violationList);
+    }
+
+    /**
+     * @return array
+     */
+    public function getValidNumericIdEntityData()
+    {
+        return [
+            [1, 2],
+            ['1', 2],
+        ];
+    }
+
+    /**
+     * @dataProvider getInvalidNumericIdEntityData
+     *
+     * @param mixed $numericIdWithoutTypeCheck
+     * @param mixed $numericIdWithTypeCheck
+     */
+    public function testNumericIdEntityAnnotation_thatIsInvalid($numericIdWithoutTypeCheck, $numericIdWithTypeCheck, array $expectedPropertyPathAndValue)
+    {
+        $entity = new StubEntityWithNumericIds($numericIdWithoutTypeCheck, $numericIdWithTypeCheck);
+        $violationList = $this->getValidatorWithAnnotationReader()->validate($entity);
+
+        $expectedMessage = 'This id is not valid.';
+
+        $this->assertCount(count($expectedPropertyPathAndValue), $violationList);
+        foreach ($expectedPropertyPathAndValue as $expectedPropertyPath => $expectedValue) {
+            $this->assertViolationListContainsMessage($violationList, $expectedPropertyPath, $expectedMessage, $expectedValue);
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function getInvalidNumericIdEntityData()
+    {
+        return [
+            [1, '2', ['numericIdWithTypeCheck' => '2']],
+            ['1', 'a', ['numericIdWithTypeCheck' => 'a']],
+            ['a', 'b', ['numericIdWithoutTypeCheck' => 'a', 'numericIdWithTypeCheck' => 'b']],
+        ];
+    }
+
+    /**
+     * @param ConstraintViolationListInterface|ConstraintViolationInterface[] $violationList
+     * @param string $expectedPropertyPath
+     * @param string $expectedMessage
+     * @param mixed $expectedValidValue
+     */
+    private function assertViolationListContainsMessage(ConstraintViolationListInterface $violationList, $expectedPropertyPath, $expectedMessage, $expectedValidValue)
+    {
+        foreach ($violationList as $violation) {
+            if (
+                $violation->getPropertyPath() == $expectedPropertyPath &&
+                $violation->getMessage() == $expectedMessage &&
+                $violation->getInvalidValue() == $expectedValidValue
+            ) {
+                return;
+            }
+        }
+
+        $this->fail(sprintf('Message [%s] not found in ConstraintViolationList', $expectedMessage));
+    }
+
+    /**
+     * @return ValidatorInterface
+     */
+    private function getValidatorWithAnnotationReader()
+    {
+        $validator = new ValidatorBuilder();
+        $validator->enableAnnotationMapping($this->getAnnotationReader());
+
+        return $validator->getValidator();
+    }
+
+    /**
+     * @return CachedReader
+     */
+    private function getAnnotationReader()
+    {
+        return new CachedReader(new AnnotationReader(), new ArrayCache());
     }
 
     /**

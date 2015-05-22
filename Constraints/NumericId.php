@@ -3,6 +3,9 @@ namespace Werkspot\Component\Validator\Constraints;
 
 use Symfony\Component\Validator\Constraint;
 
+/**
+ * @Annotation
+ */
 class NumericId extends Constraint
 {
     /**
