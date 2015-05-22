@@ -21,7 +21,7 @@ before_install:
   - curl -s http://getcomposer.org/installer | php
 
 install:
-  - php composer.phar install
+  - php composer.phar install --no-interaction
 
 script:
   - ./vendor/bin/phpunit --configuration phpunit.xml.dist --coverage-text
