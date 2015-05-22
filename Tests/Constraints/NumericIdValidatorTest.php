@@ -4,6 +4,7 @@ namespace Werkspot\Component\Validator\Tests\Constraints;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
+use stdClass;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Tests\Constraints\AbstractConstraintValidatorTest;
@@ -25,15 +26,6 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     }
 
     /**
-     * @expectedException \Symfony\Component\Validator\Exception\UnexpectedTypeException
-     * @expectedExceptionMessage string
-     */
-    public function testValidate_withValueThatCanNotBeCastedToString()
-    {
-        $this->validator->validate(new \stdClass(), new NumericId());
-    }
-
-    /**
      * @dataProvider getInvalidIdData
      *
      * @param mixed $value
@@ -47,8 +39,10 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
 
         if (is_string($expectedValue)) {
             $expectedValue = '"' . $expectedValue . '"';
-        } else if(is_object($expectedValue)) {
-            $expectedValue = '"' . strval($expectedValue) . '"';
+        } else if(is_object($value) && method_exists($value, '__toString')) {
+            $expectedValue = '"' . (string)$expectedValue . '"';
+        } else if(is_object($value) && !method_exists($value, '__toString')) {
+            $expectedValue = 'object';
         }
 
         $this->buildViolation('This id is not valid.')
@@ -72,6 +66,7 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
             [' 6 ', new NumericId()],
             [new StubValueWithToStringMethod(' 7b '), new NumericId(['checkType' => false])],
             [' 8', new NumericId()],
+            [new stdClass(), new NumericId()],
         ];
     }
 
@@ -132,6 +127,7 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
      *
      * @param mixed $numericIdWithoutTypeCheck
      * @param mixed $numericIdWithTypeCheck
+     * @param array $expectedPropertyPathAndValue
      */
     public function testNumericIdEntityAnnotation_thatIsInvalid($numericIdWithoutTypeCheck, $numericIdWithTypeCheck, array $expectedPropertyPathAndValue)
     {

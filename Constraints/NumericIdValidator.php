@@ -1,6 +1,7 @@
 <?php
 namespace Werkspot\Component\Validator\Constraints;
 
+use RuntimeException;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
@@ -13,15 +14,16 @@ class NumericIdValidator extends ConstraintValidator
     public function validate($value, Constraint $constraint)
     {
         $this->ensureConstraintIsInstanceOfNumericValidator($constraint);
-        $this->ensureValueCanBeAccessedAsAString($value);
 
-        $shouldCheckType = $this->shouldCheckType($constraint);
-        $scalarValue = $this->getScalarValue($value);
+        try {
+            $value = $this->getScalarValueOrThrowException($value);
+            $shouldCheckType = $this->shouldCheckType($constraint);
 
-        if (!$this->isValueNumericAndBiggerThanOne($scalarValue, $shouldCheckType)) {
-            $this->buildViolation($constraint->message)
-                ->setParameter('{{ value }}', $this->formatValue($scalarValue))
-                ->addViolation();
+            if (!$this->isValueNumericAndBiggerThanOne($value, $shouldCheckType)) {
+                throw new RuntimeException('Value is not numeric and bigger than one');
+            }
+        } catch (RuntimeException $e) {
+            $this->createViolation($value, $constraint);
         }
     }
 
@@ -36,13 +38,28 @@ class NumericIdValidator extends ConstraintValidator
     }
 
     /**
-     * @param $value
+     * @param NumericId $constraint
+     * @return bool
      */
-    private function ensureValueCanBeAccessedAsAString($value)
+    private function shouldCheckType(NumericId $constraint)
     {
-        if (!is_scalar($value) && !(is_object($value) && method_exists($value, '__toString'))) {
-            throw new UnexpectedTypeException($value, 'string');
+        return $constraint->checkType;
+    }
+
+    /**
+     * @param mixed $value
+     * @return string
+     * @throws RuntimeException
+     */
+    private function getScalarValueOrThrowException($value)
+    {
+        if (is_scalar($value)) {
+            return $value;
+        } elseif (is_object($value) && method_exists($value, '__toString')) {
+            return (string)$value;
         }
+
+        throw new RuntimeException('Given value is not a scalar or object with a toString method');
     }
 
     /**
@@ -53,15 +70,6 @@ class NumericIdValidator extends ConstraintValidator
     private function isValueNumericAndBiggerThanOne($value, $checkType = false)
     {
         return $this->isValueNumeric($value, $checkType) && $value > 0;
-    }
-
-    /**
-     * @param NumericId $constraint
-     * @return bool
-     */
-    private function shouldCheckType(NumericId $constraint)
-    {
-        return $constraint->checkType;
     }
 
     /**
@@ -76,15 +84,13 @@ class NumericIdValidator extends ConstraintValidator
     }
 
     /**
-     * @param $value
-     * @return string
+     * @param mixed $value
+     * @param Constraint $constraint
      */
-    private function getScalarValue($value)
+    private function createViolation($value, Constraint $constraint)
     {
-        if (is_object($value)) {
-            return (string)$value;
-        }
-
-        return $value;
+        $this->buildViolation($constraint->message)
+            ->setParameter('{{ value }}', $this->formatValue($value))
+            ->addViolation();
     }
 }
