@@ -39,6 +39,8 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
 
         if (is_string($expectedValue)) {
             $expectedValue = '"' . $expectedValue . '"';
+        } else if (is_bool($expectedValue)) {
+            $expectedValue = $expectedValue ? 'true' : 'false';
         } else if(is_object($value) && method_exists($value, '__toString')) {
             $expectedValue = '"' . (string)$expectedValue . '"';
         } else if(is_object($value) && !method_exists($value, '__toString')) {
@@ -56,6 +58,8 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     public function getInvalidIdData()
     {
         return [
+            [false, new NumericId()],
+            [true, new NumericId()],
             ['', new NumericId()],
             [0, new NumericId()],
             ['1', new NumericId(['checkType' => true])],
@@ -67,6 +71,7 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
             [new StubValueWithToStringMethod(' 7b '), new NumericId(['checkType' => false])],
             [' 8', new NumericId()],
             [new stdClass(), new NumericId()],
+            [10.1, new NumericId()],
         ];
     }
 
@@ -94,6 +99,7 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
             ['3', new NumericId(['checkType' => false])],
             ['4', new NumericId()],
             [new StubValueWithToStringMethod('5'), new NumericId()],
+            [6.0, new NumericId()],
         ];
     }
 

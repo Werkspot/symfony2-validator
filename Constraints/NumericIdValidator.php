@@ -16,7 +16,7 @@ class NumericIdValidator extends ConstraintValidator
         $this->ensureConstraintIsInstanceOfNumericValidator($constraint);
 
         try {
-            $value = $this->getScalarValueOrThrowException($value);
+            $value = $this->getValueOrThrowExceptionOnUnsupportedType($value);
             $shouldCheckType = $this->shouldCheckType($constraint);
 
             if (!$this->isValueNumericAndBiggerThanOne($value, $shouldCheckType)) {
@@ -51,15 +51,15 @@ class NumericIdValidator extends ConstraintValidator
      * @return string
      * @throws RuntimeException
      */
-    private function getScalarValueOrThrowException($value)
+    private function getValueOrThrowExceptionOnUnsupportedType($value)
     {
-        if (is_scalar($value)) {
+        if (is_string($value) || is_float($value) || is_integer($value)) {
             return $value;
         } elseif (is_object($value) && method_exists($value, '__toString')) {
             return (string)$value;
         }
 
-        throw new RuntimeException('Given value is not a scalar or object with a toString method');
+        throw new RuntimeException('Given value is not a string, float, integer or object with a toString method');
     }
 
     /**
