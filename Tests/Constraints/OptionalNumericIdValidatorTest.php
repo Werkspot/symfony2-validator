@@ -4,17 +4,16 @@ namespace Werkspot\Component\Validator\Tests\Constraints;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
-use stdClass;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Tests\Constraints\AbstractConstraintValidatorTest;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\ValidatorBuilder;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Werkspot\Component\Validator\Constraints\NumericId;
-use Werkspot\Component\Validator\Constraints\NumericIdValidator;
+use Werkspot\Component\Validator\Constraints\OptionalNumericId;
+use Werkspot\Component\Validator\Constraints\OptionalNumericIdValidator;
 
-class NumericIdValidatorTest extends AbstractConstraintValidatorTest
+class OptionalNumericIdValidatorTest extends AbstractConstraintValidatorTest
 {
     /**
      * @expectedException \Symfony\Component\Validator\Exception\UnexpectedTypeException
@@ -26,62 +25,12 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     }
 
     /**
-     * @dataProvider getInvalidIdData
-     *
-     * @param mixed $value
-     * @param NumericId $constraint
-     */
-    public function testValidate_withInvalidValue($value, NumericId $constraint)
-    {
-        $this->validator->validate($value, $constraint);
-
-        $expectedValue = $value;
-
-        if (is_string($expectedValue)) {
-            $expectedValue = '"' . $expectedValue . '"';
-        } else if (is_bool($expectedValue)) {
-            $expectedValue = $expectedValue ? 'true' : 'false';
-        } else if(is_object($value) && method_exists($value, '__toString')) {
-            $expectedValue = '"' . (string)$expectedValue . '"';
-        } else if(is_object($value) && !method_exists($value, '__toString')) {
-            $expectedValue = 'object';
-        }
-
-        $this->buildViolation('This id is not valid.')
-            ->setParameter('{{ value }}', $expectedValue)
-            ->assertRaised();
-    }
-
-    /**
-     * @return array
-     */
-    public function getInvalidIdData()
-    {
-        return [
-            [false, new NumericId()],
-            [true, new NumericId()],
-            ['', new NumericId()],
-            [0, new NumericId()],
-            ['1', new NumericId(['checkType' => true])],
-            [1.9, new NumericId()],
-            [new StubValueWithToStringMethod('3'), new NumericId(['checkType' => true])],
-            ['4a', new NumericId()],
-            ['5  ', new NumericId()],
-            [' 6 ', new NumericId()],
-            [new StubValueWithToStringMethod(' 7b '), new NumericId(['checkType' => false])],
-            [' 8', new NumericId()],
-            [new stdClass(), new NumericId()],
-            [10.1, new NumericId()],
-        ];
-    }
-
-    /**
      * @dataProvider getValidIdData
      *
      * @param mixed $value
-     * @param NumericId $constraint
+     * @param OptionalNumericId $constraint
      */
-    public function testValidate_withValidValue($value, NumericId $constraint)
+    public function testValidate_withValidValue($value, OptionalNumericId $constraint)
     {
         $this->validator->validate($value, $constraint);
 
@@ -94,24 +43,26 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     public function getValidIdData()
     {
         return [
-            [1, new NumericId()],
-            [2, new NumericId(['checkType' => true])],
-            ['3', new NumericId(['checkType' => false])],
-            ['4', new NumericId()],
-            [new StubValueWithToStringMethod('5'), new NumericId()],
-            [6.0, new NumericId()],
+            [1, new OptionalNumericId()],
+            [2, new OptionalNumericId(['checkType' => true])],
+            ['3', new OptionalNumericId(['checkType' => false])],
+            ['4', new OptionalNumericId()],
+            [new StubValueWithToStringMethod('5'), new OptionalNumericId()],
+            [6.0, new OptionalNumericId()],
+            [null, new OptionalNumericId()],
+            [null, new OptionalNumericId(['checkType' => true])],
         ];
     }
 
     /**
-     * @dataProvider getValidNumericIdEntityData
-     *
-     * @param mixed $numericIdWithoutTypeCheck
-     * @param mixed $numericIdWithTypeCheck
-     */
-    public function testNumericIdEntityAnnotation_thatIsValid($numericIdWithoutTypeCheck, $numericIdWithTypeCheck)
+    * @dataProvider getValidOptionalNumericIdEntityData
+    *
+    * @param mixed $optionalNumericIdWithoutTypeCheck
+    * @param mixed $optionalNumericIdWithTypeCheck
+    */
+    public function testNumericIdEntityAnnotation_thatIsValid($optionalNumericIdWithoutTypeCheck, $optionalNumericIdWithTypeCheck)
     {
-        $entity = new StubEntityWithNumericIds($numericIdWithoutTypeCheck, $numericIdWithTypeCheck);
+        $entity = new StubEntityWithOptionalNumericIds($optionalNumericIdWithoutTypeCheck, $optionalNumericIdWithTypeCheck);
         $violationList = $this->getValidatorWithAnnotationReader()->validate($entity);
 
         $this->assertEmpty($violationList);
@@ -120,24 +71,25 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     /**
      * @return array
      */
-    public function getValidNumericIdEntityData()
+    public function getValidOptionalNumericIdEntityData()
     {
         return [
             [1, 2],
             ['1', 2],
+            [null, null],
         ];
     }
 
     /**
-     * @dataProvider getInvalidNumericIdEntityData
+     * @dataProvider getInvalidOptionalNumericIdEntityData
      *
-     * @param mixed $numericIdWithoutTypeCheck
-     * @param mixed $numericIdWithTypeCheck
+     * @param mixed $optionalNumericIdWithoutTypeCheck
+     * @param mixed $optionalNumericIdWithTypeCheck
      * @param array $expectedPropertyPathAndValue
      */
-    public function testNumericIdEntityAnnotation_thatIsInvalid($numericIdWithoutTypeCheck, $numericIdWithTypeCheck, array $expectedPropertyPathAndValue)
+    public function testNumericIdEntityAnnotation_thatIsInvalid($optionalNumericIdWithoutTypeCheck, $optionalNumericIdWithTypeCheck, array $expectedPropertyPathAndValue)
     {
-        $entity = new StubEntityWithNumericIds($numericIdWithoutTypeCheck, $numericIdWithTypeCheck);
+        $entity = new StubEntityWithOptionalNumericIds($optionalNumericIdWithoutTypeCheck, $optionalNumericIdWithTypeCheck);
         $violationList = $this->getValidatorWithAnnotationReader()->validate($entity);
 
         $expectedMessage = 'This id is not valid.';
@@ -151,12 +103,12 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     /**
      * @return array
      */
-    public function getInvalidNumericIdEntityData()
+    public function getInvalidOptionalNumericIdEntityData()
     {
         return [
-            [1, '2', ['numericIdWithTypeCheck' => '2']],
-            ['1', 'a', ['numericIdWithTypeCheck' => 'a']],
-            ['a', 'b', ['numericIdWithoutTypeCheck' => 'a', 'numericIdWithTypeCheck' => 'b']],
+            [1, '2', ['optionalNumericIdWithTypeCheck' => '2']],
+            ['1', 'a', ['optionalNumericIdWithTypeCheck' => 'a']],
+            ['a', 'b', ['optionalNumericIdWithoutTypeCheck' => 'a', 'optionalNumericIdWithTypeCheck' => 'b']],
         ];
     }
 
@@ -209,10 +161,10 @@ class NumericIdValidatorTest extends AbstractConstraintValidatorTest
     }
 
     /**
-     * @return NumericIdValidator
+     * @return OptionalNumericIdValidator
      */
     protected function createValidator()
     {
-        return new NumericIdValidator();
+        return new OptionalNumericIdValidator();
     }
 }
